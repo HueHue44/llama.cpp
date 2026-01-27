@@ -1,5 +1,5 @@
 #include "ggml-vulkan.h"
-#include <vulkan/vulkan_core.h>
+#include <Volk/volk.h>
 #if defined(GGML_VULKAN_RUN_TESTS) || defined(GGML_VULKAN_CHECK_RESULTS)
 #include <chrono>
 #include "ggml-cpu.h"
@@ -4747,19 +4747,13 @@ static vk_device ggml_vk_get_device(size_t idx) {
         std::vector<const char *> device_extensions;
         vk::PhysicalDeviceFeatures device_features = device->physical_device.getFeatures();
 
-        VkPhysicalDeviceFeatures2 device_features2;
-        device_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        device_features2.pNext = nullptr;
-        device_features2.features = (VkPhysicalDeviceFeatures)device_features;
+        vk::PhysicalDeviceFeatures2 device_features2;
+        device_features2.features = device_features;
 
-        VkPhysicalDeviceVulkan11Features vk11_features;
-        vk11_features.pNext = nullptr;
-        vk11_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+        vk::PhysicalDeviceVulkan11Features vk11_features;
         device_features2.pNext = &vk11_features;
 
-        VkPhysicalDeviceVulkan12Features vk12_features;
-        vk12_features.pNext = nullptr;
-        vk12_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+        vk::PhysicalDeviceVulkan12Features vk12_features;
         vk11_features.pNext = &vk12_features;
 
         last_struct = (VkBaseOutStructure *)&vk12_features;
@@ -4868,7 +4862,7 @@ static vk_device ggml_vk_get_device(size_t idx) {
         }
 #endif
 
-        vkGetPhysicalDeviceFeatures2(device->physical_device, &device_features2);
+        device->physical_device.getFeatures2(&device_features2);
 
         device->pipeline_executable_properties_support = pipeline_executable_properties_support;
 
@@ -5309,18 +5303,12 @@ static void ggml_vk_print_gpu_info(size_t idx) {
 
     physical_device.getProperties2(&props2);
 
-    VkPhysicalDeviceFeatures2 device_features2;
-    device_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    device_features2.pNext = nullptr;
+    vk::PhysicalDeviceFeatures2 device_features2;
 
-    VkPhysicalDeviceVulkan11Features vk11_features;
-    vk11_features.pNext = nullptr;
-    vk11_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    vk::PhysicalDeviceVulkan11Features vk11_features;
     device_features2.pNext = &vk11_features;
 
-    VkPhysicalDeviceVulkan12Features vk12_features;
-    vk12_features.pNext = nullptr;
-    vk12_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    vk::PhysicalDeviceVulkan12Features vk12_features;
     vk11_features.pNext = &vk12_features;
 
     // Pointer to the last chain element
@@ -5354,7 +5342,7 @@ static void ggml_vk_print_gpu_info(size_t idx) {
     }
 #endif
 
-    vkGetPhysicalDeviceFeatures2(physical_device, &device_features2);
+    physical_device.getFeatures2(&device_features2);
 
     fp16 = fp16 && vk12_features.shaderFloat16;
 
@@ -15196,15 +15184,12 @@ static bool ggml_vk_instance_debug_utils_ext_available(
 }
 
 static bool ggml_vk_device_is_supported(const vk::PhysicalDevice & vkdev) {
-    VkPhysicalDeviceFeatures2 device_features2;
-    device_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    vk::PhysicalDeviceFeatures2 device_features2;
 
-    VkPhysicalDeviceVulkan11Features vk11_features;
-    vk11_features.pNext = nullptr;
-    vk11_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    vk::PhysicalDeviceVulkan11Features vk11_features;
     device_features2.pNext = &vk11_features;
 
-    vkGetPhysicalDeviceFeatures2(vkdev, &device_features2);
+    vkdev.getFeatures2(&device_features2);
 
     return vk11_features.storageBuffer16BitAccess;
 }
